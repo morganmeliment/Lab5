@@ -50,12 +50,33 @@ public class MorseDecoder {
          */
         int totalBinCount = (int) Math.ceil(inputFile.getNumFrames() / BIN_SIZE);
         double[] returnBuffer = new double[totalBinCount];
-
-        double[] sampleBuffer = new double[BIN_SIZE * inputFile.getNumChannels()];
+        double[] sampleBuffer = new double[BIN_SIZE * (int) inputFile.getNumFrames()];
+        inputFile.readFrames(sampleBuffer, BIN_SIZE * (int) inputFile.getNumFrames());
+        /*for (double tre: sampleBuffer) {
+            System.out.println(tre);
+        }*/
+        //System.out.println(sampleBuffer.length);
         for (int binIndex = 0; binIndex < totalBinCount; binIndex++) {
+            //System.out.println(totalBinCount);
             // Get the right number of samples from the inputFile
             // Sum all the samples together and store them in the returnBuffer
+            double sum = 0.0;
+            //System.out.println(((binIndex * BIN_SIZE) + BIN_SIZE));
+            //System.out.println("heee: " + totalBinCount);
+            //System.out.println("heee: " + inputFile.getNumFrames());
+            for (int y = binIndex * BIN_SIZE;
+                    y < ((binIndex * BIN_SIZE) + BIN_SIZE); y++) {
+                //System.out.println(y);
+                if (sampleBuffer[y] >= 0) {
+                    sum += sampleBuffer[y];
+                } else {
+                    sum -= sampleBuffer[y];
+                }
+            }
+            returnBuffer[binIndex] = sum;
+            System.out.println(sum);
         }
+
         return returnBuffer;
     }
 
@@ -81,13 +102,40 @@ public class MorseDecoder {
          * There are four conditions to handle. Symbols should only be output when you see
          * transitions. You will also have to store how much power or silence you have seen.
          */
+        String morse = "";
+        int last = 0;
+        boolean lasty = false;
+        int times = 0;
+        for (double num: powerMeasurements) {
+            if (num > POWER_THRESHOLD) {
+                times++;
+            } else {
+                if (times >= DASH_BIN_COUNT) {
+                    morse += "-";
+                    last = 0;
+                    lasty = false;
+                } else if (times > 0) {
+                    morse += ".";
+                    last = 0;
+                    lasty = false;
+                } else {
+                    last++;
+                }
+                if (last >= DASH_BIN_COUNT && !lasty) {
+                    morse += " ";
+                    last = 0;
+                    lasty = true;
+                }
+                times = 0;
+            }
+        }
 
         // if ispower and waspower
         // else if ispower and not waspower
         // else if issilence and wassilence
         // else if issilence and not wassilence
 
-        return "";
+        return morse;
     }
 
     /**
